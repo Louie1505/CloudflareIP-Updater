@@ -8,6 +8,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -57,14 +58,29 @@ namespace FunFacts
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             var freq = Program.configuration["frequency"];
-            this.interval = 1;//TESTING (string.IsNullOrEmpty(freq) ? 2 : int.Parse(freq)) * 1000 * 60;
+            this.interval = (string.IsNullOrEmpty(freq) ? 2 : int.Parse(freq)) * 1000 * 60;
             this.timer = new Timer(Callback, null, interval, Timeout.Infinite);
         }
-        private void Callback(object state)
+        private async void Callback(object state)
         {
             var currentIP = Helpers.CurrentPublicIP();
             if (string.IsNullOrEmpty(currentIP))
                 throw new Exception("Unable to fetch IP");
+            CloudflareAPIWorker worker = new CloudflareAPIWorker(Program.configuration["urlBase"], Program.configuration["xAuthEmail"], Program.configuration["xAuthKey"]);
+            var zones = await worker.GetZones();
+            foreach (var zone in zones)
+            {
+                var dnsRecords = await worker.GetDNSRecords(zone.id);
+                foreach (var dnsRecord in dnsRecords)
+                {
+                    if (!Regex.IsMatch(dnsRecord.content, currentIP))
+                    {
+                        var newDns = dnsRecord;
+                        newDns.content = currentIP;
+                        await worker.UpdateDNSRecords(dnsRecord, newDns);
+                    }
+                }
+            }
             //Set next timer
             timer.Change(interval, Timeout.Infinite);
         }
