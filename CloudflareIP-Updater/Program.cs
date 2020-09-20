@@ -78,6 +78,7 @@ namespace FunFacts
                         var newDns = dnsRecord;
                         newDns.content = currentIP;
                         await worker.UpdateDNSRecords(dnsRecord, newDns);
+                        Helpers.LogOutWarning($"UPDATED DNS RECORD FOR {dnsRecord.name} . CHANGED IP FROM {dnsRecord.content} TO {currentIP}.");
                     }
                 }
             }

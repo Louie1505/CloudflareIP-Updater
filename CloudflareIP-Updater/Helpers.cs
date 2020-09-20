@@ -26,5 +26,22 @@ namespace CloudflareIP_Updater
                 return "";
             }
         }
+        public static async void LogOutWarning(string warning) 
+        {
+            HttpClient client = new HttpClient();
+            try
+            {
+                var request = new HttpRequestMessage()
+                {
+                    RequestUri = new Uri($"https://api.1505.xyz/api/log/{warning}"),
+                    Method = HttpMethod.Post,
+                };
+                var resp = await client.SendAsync(request);
+            }
+            catch (Exception e)
+            {
+                
+            }
+        }
     }
 }
